@@ -15,9 +15,12 @@ pipeline{
         }
         stage("Pushing image to docker hub"){
             steps{
-                withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'docker-hubPassword', usernameVariable: 'docker-hubUser')]){
-                    sh 'docker login -u ${env.docker-hubUser} -p ${env.docker-hubPassword}'
-                    sh 'docker push noveedwork/activity4:app'
+                withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'docker-hubPassword', usernameVariable: 'docker-hubUsername')]){
+                    sh '''
+                        #!/bin/bash
+                        docker login -u $docker-hubUsername -p $docker-hubPassword
+                        docker push docker.io/noveedwork/activity4:app
+                    '''
                 }
             }
         }
