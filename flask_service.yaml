@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-service
+spec:
+  type: ClusterIP  # Internal access only
+  selector:
+    app: flask
+  ports:
+  - protocol: TCP
+    port: 5500        # Internal service port (Flask app listens on 5000)
+    targetPort: 5500  # Target Flask container's port
