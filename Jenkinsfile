@@ -22,6 +22,7 @@ pipeline{
                 '''
                 }
             }
+        }
         stage("Orchestrating container on Kubernetes"){
             steps{
                 sh 'kubectl apply -f flask_deployment.yaml'
