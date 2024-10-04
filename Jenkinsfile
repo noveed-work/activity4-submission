@@ -28,8 +28,8 @@ pipeline{
                 sh 'kubectl apply -f flask_service.yaml'
                 sh 'kubectl apply -f nginx_deployment.yaml'
                 sh 'kubectl apply -f nginx_service.yaml'
+                }
             }
-        }
         }
     }
 }
