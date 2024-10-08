@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        KUBECONFIG = "/home/jenkins/.kube/config" // Specify Jenkins user's kube config
+        KUBECONFIG = "./home/noveed/.kube/config" // Specify Jenkins user's kube config
     }
 
     stages {
