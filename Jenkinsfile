@@ -1,5 +1,10 @@
 pipeline{
     agent any
+
+      environment {
+        KUBECONFIG = "/home/noveed/Desktop/activity4_main" // Specify Jenkins user's kube config
+    }
+    
     stages{
         stage("Cleanup"){
             steps{
