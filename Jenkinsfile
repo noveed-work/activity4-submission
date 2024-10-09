@@ -1,38 +1,58 @@
 pipeline {
     agent any
-
     environment {
-        // Set the KUBECONFIG for the Jenkins user
-        KUBECONFIG = "$HOME/.kube/config"
+        // Azure Service Principal credentials
+        AZURE_CLIENT_ID = 'b1a38644-f75a-412e-996c-1a0367c664ee'  // appId
+        AZURE_CLIENT_SECRET = 'C6u8Q~0POdaPzKNTccFwS1UKIUpKJDwIIQzQAaPD' // password
+        AZURE_TENANT_ID = '6b5953be-6b1d-4980-b26b-56ed8b0bf3dc'   // tenant
+        AZURE_RESOURCE_GROUP = 'Container'              // Resource group where AKS is deployed
+        AZURE_AKS_CLUSTER = 'noveedk8s'                    // AKS cluster name
+        AZURE_SUBSCRIPTION_ID = '3ab58c06-273a-45bc-b3cb-feea94be3455'                // Azure subscription ID
     }
 
     stages {
-        stage("Cleanup") {
+        stage("Azure Login") {
             steps {
-                // Cleanup any running or stopped containers, and remove all images
-                sh 'docker rm -f $(docker ps -aq) || true'
-                sh 'docker rmi -f $(docker images -q) || true'
+                // Log in to Azure using the Service Principal credentials
+                script {
+                    sh '''
+                    az login --service-principal \
+                        -u $AZURE_CLIENT_ID \
+                        -p $AZURE_CLIENT_SECRET \
+                        --tenant $AZURE_TENANT_ID
+
+                    # Set the default subscription
+                    az account set --subscription $AZURE_SUBSCRIPTION_ID
+                    '''
+                }
             }
         }
 
-        stage("Start Minikube") {
+        stage("Configure AKS Access") {
             steps {
+                // Configure kubectl to use the AKS cluster
                 script {
-                    // Ensure Minikube is running
-                    def minikubeRunning = sh(script: 'minikube status | grep -q "Running"', returnStatus: true)
-                    if (minikubeRunning != 0) {
-                        // Start Minikube if not already running
-                        sh 'minikube start --cpus 4 --memory 8192 --driver=docker'
-                    }
-                    // Set kubectl context to minikube
-                    sh 'kubectl config use-context minikube'
+                    sh '''
+                    az aks get-credentials --resource-group $AZURE_RESOURCE_GROUP \
+                        --name $AZURE_AKS_CLUSTER --overwrite-existing
+                    '''
                 }
+            }
+        }
+
+        stage("Cleanup") {
+            steps {
+                // Cleanup any running or stopped containers, and remove all images
+                sh '''
+                docker rm -f $(docker ps -aq) || true
+                docker rmi -f $(docker images -q) || true
+                '''
             }
         }
 
         stage("Build Docker Image") {
             steps {
-                // Build the Docker image
+                // Build the Docker image from the Dockerfile in the current directory
                 sh 'docker build -t noveedwork/activity4:app .'
             }
         }
@@ -40,30 +60,32 @@ pipeline {
         stage("Push Image to Docker Hub") {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    // Login and push the Docker image to Docker Hub
+                    // Login to Docker Hub and push the image
                     sh '''
                     echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                    docker push docker.io/noveedwork/activity4:app
+                    docker push noveedwork/activity4:app
                     '''
                 }
             }
         }
 
-        stage("Orchestrate Containers on Kubernetes") {
+        stage("Deploy to AKS") {
             steps {
-                // Apply the Kubernetes deployment and service YAML files
-                sh 'kubectl apply -f flask_deployment.yaml'
-                sh 'kubectl apply -f flask_service.yaml'
-                sh 'kubectl apply -f nginx_deployment.yaml'
-                sh 'kubectl apply -f nginx_service.yaml'
+                // Apply the Kubernetes deployment and service YAML files to AKS
+                sh '''
+                kubectl apply -f flask_deployment.yaml
+                kubectl apply -f flask_service.yaml
+                kubectl apply -f nginx_deployment.yaml
+                kubectl apply -f nginx_service.yaml
+                '''
             }
         }
     }
 
     post {
         always {
-            // Optionally, print the Minikube status at the end of the pipeline
-            sh 'minikube status'
+            // Print the Kubernetes cluster information after the deployment
+            sh 'kubectl cluster-info'
         }
     }
 }
