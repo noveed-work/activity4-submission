@@ -1,13 +1,12 @@
 pipeline {
     agent any
     environment {
-        // Azure Service Principal credentials
-        AZURE_CLIENT_ID = 'b1a38644-f75a-412e-996c-1a0367c664ee'  // appId
-        AZURE_CLIENT_SECRET = 'C6u8Q~0POdaPzKNTccFwS1UKIUpKJDwIIQzQAaPD' // password
-        AZURE_TENANT_ID = '6b5953be-6b1d-4980-b26b-56ed8b0bf3dc'   // tenant
-        AZURE_RESOURCE_GROUP = 'Container'              // Resource group where AKS is deployed
-        AZURE_AKS_CLUSTER = 'noveedk8s'                    // AKS cluster name
-        AZURE_SUBSCRIPTION_ID = '3ab58c06-273a-45bc-b3cb-feea94be3455'                // Azure subscription ID
+        AZURE_CLIENT_ID = credentials('azure-client-id') // Reference the stored Client ID
+        AZURE_CLIENT_SECRET = credentials('azure-client-secret') // Reference the stored Client Secret
+        AZURE_TENANT_ID = credentials('azure-tenant-id') // Reference the stored Tenant ID
+        AZURE_RESOURCE_GROUP = '<YourResourceGroupName>' // Resource group where AKS is deployed
+        AZURE_AKS_CLUSTER = '<YourAKSClusterName>' // AKS cluster name
+        AZURE_SUBSCRIPTION_ID = '<YourSubscriptionID>' // Azure subscription ID
     }
 
     stages {
